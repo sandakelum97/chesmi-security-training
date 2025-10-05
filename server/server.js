@@ -1,9 +1,10 @@
 // ===================================================================================
-// === FINAL & DEPLOYMENT-READY CODE FOR server.js (Vercel)
+// === FINAL & DEPLOYMENT-READY CODE FOR server.js (Includes SSL Config)
 // ===================================================================================
 
 require('dotenv').config();
 const express = require('express');
+const path = require('path'); // Handles file paths
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -16,9 +17,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// --- SERVE STATIC FILES (for Vercel, this is handled by vercel.json, but it's safe to keep) ---
+app.use(express.static(path.join(__dirname, '../client')));
+
 // Database Pool Configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // --- CRITICAL: SSL configuration for production database connection ---
   ssl: {
     rejectUnauthorized: false
   }
@@ -210,7 +215,11 @@ app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res
     }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running successfully on port ${PORT}`);
+// --- CATCH-ALL ROUTE ---
+// This serves the index.html file for any route that isn't an API call.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/index.html'));
 });
+
+// Export the app for Vercel
+module.exports = app;
