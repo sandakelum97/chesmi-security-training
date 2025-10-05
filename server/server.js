@@ -1,35 +1,30 @@
 // ===================================================================================
-// === FINAL & DEPLOYMENT-READY CODE FOR server.js
+// === FINAL & DEPLOYMENT-READY CODE FOR server.js (Vercel)
 // ===================================================================================
 
 require('dotenv').config();
 const express = require('express');
-const path = require('path'); // Add this line to handle file paths
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Use environment port from Render, or 3000 for local dev
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// --- NEW: SERVE STATIC FILES ---
-// This tells Express to serve all the files from the 'client' folder
-app.use(express.static(path.join(__dirname, '../client')));
-
+// Database Pool Configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // --- NEW: SSL configuration for production database connection ---
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-// MIDDLEWARE
+// AUTHENTICATION MIDDLEWARE
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -213,13 +208,6 @@ app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res
         console.error('Error updating user role:', err);
         res.status(500).json({ error: 'Server error updating user role.' });
     }
-});
-
-// --- NEW: CATCH-ALL ROUTE ---
-// This serves the index.html file for any route that isn't an API call.
-// This is important for letting the user refresh pages like /profile or /hub
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
 // Start the server
