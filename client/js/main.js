@@ -1,5 +1,5 @@
 // ===================================================================================
-// === MODIFIED CODE FOR client/js/main.js (logAttempt with Debug Lines)
+// === COMPLETE & CORRECTED CODE FOR client/js/main.js
 // ===================================================================================
 
 const particleConfig = {
@@ -38,7 +38,7 @@ const quizController = {
         this.securityLevel = 100; 
         appController.updateSecurityVisuals(); 
         this.questions = this.quizData.questions; 
-        this.shuffleArray(this.questions); // Ensures question order is randomized
+        this.shuffleArray(this.questions);
         this.showQuestion(); 
     },
     shuffleArray(array) { if (!array) return; for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } },
@@ -162,9 +162,6 @@ const appController = {
     },
     logout() { localStorage.removeItem('chesmiAuthToken'); localStorage.removeItem('chesmiUserData'); window.location.href = 'index.html'; },
 
-    // =========================================================
-    // === REPLACED: handleProfilePage function (Card View)
-    // =========================================================
     async handleProfilePage() {
         const token = localStorage.getItem('chesmiAuthToken');
         if (!token) return this.logout();
@@ -195,9 +192,6 @@ const appController = {
         } catch (error) { console.error(error); document.getElementById('attemptsContainer').innerHTML = '<p>Could not load quiz history.</p>'; }
     },
 
-    // =========================================================
-    // === REPLACED: handleLeaderboardPage function (Card View)
-    // =========================================================
     async handleLeaderboardPage() {
         try {
             const response = await fetch('/api/leaderboard');
@@ -225,111 +219,102 @@ const appController = {
         } catch (error) { console.error(error); document.getElementById('leaderboardContainer').innerHTML = '<p>Could not load leaderboard.</p>'; }
     },
     
-    // =========================================================
-    // === REPLACED: handleAdminPage function (Card View + Role Change)
-    // =========================================================
-   // In client/js/main.js, replace the entire handleAdminPage function
+    async handleAdminPage() {
+        const token = localStorage.getItem('chesmiAuthToken');
+        if (!token) return window.location.href = 'index.html';
 
-async handleAdminPage() {
-    const token = localStorage.getItem('chesmiAuthToken');
-    if (!token) return window.location.href = 'index.html';
-
-    const userDetailsModal = document.getElementById('userDetailsModal');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => userDetailsModal.classList.remove('show'));
-    }
-
-    try {
-        const response = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (response.status === 403) { alert('Access Denied: Admins only.'); return window.location.href = 'hub.html'; }
-        if (!response.ok) throw new Error('Failed to load user data.');
-        const users = await response.json();
-        const container = document.getElementById('usersContainer');
-        container.innerHTML = '';
-        users.forEach(user => {
-            const card = document.createElement('div');
-            card.className = 'data-card';
-            card.innerHTML = `
-                <div class="admin-card-header">
-                    <h3>${user.name}</h3>
-                    <span class="role-badge role-${user.role}">${user.role.toUpperCase()}</span>
-                </div>
-                <p><strong>ID:</strong> ${user.id}</p>
-                <p><strong>Email:</strong> ${user.email}</p>
-                <div class="admin-card-actions">
-                    <button class="btn btn-secondary btn-details" data-user-id="${user.id}" data-user-name="${user.name}">
-                        <i class="fas fa-history"></i> View Details
-                    </button>
-                    <button class="btn-icon btn-promote" data-user-id="${user.id}" data-current-role="${user.role}" title="Promote/Demote User">
-                        <i class="fas fa-user-shield"></i>
-                    </button>
-                    <button class="btn-icon btn-delete" data-user-id="${user.id}" title="Delete User">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-
-        // Add event listeners for all buttons
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', async (event) => { const userId = event.currentTarget.dataset.userId; if (confirm(`Are you sure you want to delete user ID ${userId}?`)) await this.deleteUser(userId, token); });
-        });
-        document.querySelectorAll('.btn-promote').forEach(button => {
-            button.addEventListener('click', async (event) => { const userId = event.currentTarget.dataset.userId; const currentRole = event.currentTarget.dataset.currentRole; const newRole = currentRole === 'admin' ? 'user' : 'admin'; if (confirm(`Change this user's role to '${newRole.toUpperCase()}'?`)) await this.updateUserRole(userId, newRole, token); });
-        });
-        document.querySelectorAll('.btn-details').forEach(button => {
-            button.addEventListener('click', async (event) => {
-                const userId = event.currentTarget.dataset.userId;
-                const userName = event.currentTarget.dataset.userName;
-                await this.showUserDetails(userId, userName, token);
-            });
-        });
-    } catch (error) { console.error('Admin page error:', error); alert('An error occurred.'); window.location.href = 'hub.html'; }
-},
-
-// Don't forget to add these two new helper functions to your appController object as well!
-async showUserDetails(userId, userName, token) {
-    const modal = document.getElementById('userDetailsModal');
-    document.getElementById('modalUserName').textContent = `Quiz History for: ${userName}`;
-    const attemptsContainer = document.getElementById('modalUserAttempts');
-    attemptsContainer.innerHTML = '<p>Loading...</p>';
-    modal.classList.add('show');
-    try {
-        const response = await fetch(`/api/admin/users/${userId}/attempts`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!response.ok) throw new Error('Failed to fetch attempts.');
-        const attempts = await response.json();
-        let html = `
-            <table>
-                <thead>
-                    <tr><th>Quiz</th><th>Score</th><th>Status</th><th>Date</th></tr>
-                </thead>
-                <tbody>
-        `;
-        if (attempts.length === 0) {
-            html += '<tr><td colspan="4">This user has not completed any quizzes.</td></tr>';
-        } else {
-            attempts.forEach(att => {
-                html += `
-                    <tr>
-                        <td>${att.quiz_title}</td>
-                        <td>${att.score} / ${att.total_questions}</td>
-                        <td class="${att.status === 'pass' ? 'status-pass' : 'status-fail'}">${att.status}</td>
-                        <td>${new Date(att.completed_at).toLocaleDateString()}</td>
-                    </tr>
-                `;
-            });
+        const userDetailsModal = document.getElementById('userDetailsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => userDetailsModal.classList.remove('show'));
         }
-        html += '</tbody></table>';
-        attemptsContainer.innerHTML = html;
-    } catch(error) {
-        attemptsContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
-    }
-},
-    // =========================================================
-    // === ADDED: updateUserRole function
-    // =========================================================
+
+        try {
+            const response = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (response.status === 403) { alert('Access Denied: Admins only.'); return window.location.href = 'hub.html'; }
+            if (!response.ok) throw new Error('Failed to load user data.');
+            const users = await response.json();
+            const container = document.getElementById('usersContainer');
+            container.innerHTML = '';
+            users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'data-card';
+                card.innerHTML = `
+                    <div class="admin-card-header">
+                        <h3>${user.name}</h3>
+                        <span class="role-badge role-${user.role}">${user.role.toUpperCase()}</span>
+                    </div>
+                    <p><strong>ID:</strong> ${user.id}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <div class="admin-card-actions">
+                        <button class="btn btn-secondary btn-details" data-user-id="${user.id}" data-user-name="${user.name}">
+                            <i class="fas fa-history"></i> View Details
+                        </button>
+                        <button class="btn-icon btn-promote" data-user-id="${user.id}" data-current-role="${user.role}" title="Promote/Demote User">
+                            <i class="fas fa-user-shield"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" data-user-id="${user.id}" title="Delete User">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.querySelectorAll('.btn-delete').forEach(button => {
+                button.addEventListener('click', async (event) => { const userId = event.currentTarget.dataset.userId; if (confirm(`Are you sure you want to delete user ID ${userId}?`)) await this.deleteUser(userId, token); });
+            });
+            document.querySelectorAll('.btn-promote').forEach(button => {
+                button.addEventListener('click', async (event) => { const userId = event.currentTarget.dataset.userId; const currentRole = event.currentTarget.dataset.currentRole; const newRole = currentRole === 'admin' ? 'user' : 'admin'; if (confirm(`Change this user's role to '${newRole.toUpperCase()}'?`)) await this.updateUserRole(userId, newRole, token); });
+            });
+            document.querySelectorAll('.btn-details').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const userId = event.currentTarget.dataset.userId;
+                    const userName = event.currentTarget.dataset.userName;
+                    await this.showUserDetails(userId, userName, token);
+                });
+            });
+        } catch (error) { console.error('Admin page error:', error); alert('An error occurred.'); window.location.href = 'hub.html'; }
+    },
+
+    async showUserDetails(userId, userName, token) {
+        const modal = document.getElementById('userDetailsModal');
+        document.getElementById('modalUserName').textContent = `Quiz History for: ${userName}`;
+        const attemptsContainer = document.getElementById('modalUserAttempts');
+        attemptsContainer.innerHTML = '<p>Loading...</p>';
+        modal.classList.add('show');
+        try {
+            const response = await fetch(`/api/admin/users/${userId}/attempts`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error('Failed to fetch attempts.');
+            const attempts = await response.json();
+            let html = `
+                <table>
+                    <thead>
+                        <tr><th>Quiz</th><th>Score</th><th>Status</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+            if (attempts.length === 0) {
+                html += '<tr><td colspan="4">This user has not completed any quizzes.</td></tr>';
+            } else {
+                attempts.forEach(att => {
+                    html += `
+                        <tr>
+                            <td>${att.quiz_title}</td>
+                            <td>${att.score} / ${att.total_questions}</td>
+                            <td class="${att.status === 'pass' ? 'status-pass' : 'status-fail'}">${att.status}</td>
+                            <td>${new Date(att.completed_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+            }
+            html += '</tbody></table>';
+            attemptsContainer.innerHTML = html;
+        } catch(error) {
+            attemptsContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        }
+    },
+
     async updateUserRole(userId, newRole, token) {
         try {
             const response = await fetch(`/api/admin/users/${userId}/role`, {
@@ -353,6 +338,7 @@ async showUserDetails(userId, userName, token) {
             window.location.reload();
         } catch (error) { alert(`Error: ${error.message}`); }
     },
+
     handleResultsPage() {
         const result = JSON.parse(sessionStorage.getItem('lastQuizResult'));
         if (!result) return window.location.href = 'hub.html';
@@ -367,6 +353,7 @@ async showUserDetails(userId, userName, token) {
             document.getElementById('scoreMessage').style.color = 'var(--warning-color)';
         }
     },
+
     handleCertificatePage() {
         const userData = JSON.parse(localStorage.getItem('chesmiUserData'));
         const params = new URLSearchParams(window.location.search);
@@ -377,9 +364,6 @@ async showUserDetails(userId, userName, token) {
         }
     },
 
-    // =========================================================
-    // === REPLACED: logAttempt function with Debug Lines (Kept from previous update)
-    // =========================================================
     async logAttempt(quizTitle, score, totalQuestions, status) {
         console.log("DEBUG: logAttempt function started. Preparing to send data...");
         const token = localStorage.getItem('chesmiAuthToken');
@@ -391,7 +375,6 @@ async showUserDetails(userId, userName, token) {
         try {
             console.log("DEBUG: Sending quiz result to server:", { quizTitle, score, totalQuestions, status });
             
-            // NOTE: The endpoint is changed to '/api/quizzes/submit' as per the instruction code
             const response = await fetch('/api/quizzes/submit', {
                 method: 'POST',
                 headers: {
@@ -415,7 +398,6 @@ async showUserDetails(userId, userName, token) {
             console.error("DEBUG: CRITICAL ERROR during fetch in logAttempt:", error);
         }
     },
-    // =========================================================
 
     updateSecurityVisuals() {
         if (!document.getElementById('securityStatusBar')) return;
@@ -428,6 +410,7 @@ async showUserDetails(userId, userName, token) {
         document.getElementById('securityStatusText').textContent = stateText;
         this.runParticles(config);
     },
+
     setupInteractiveLinks() {
         document.querySelectorAll('.suspicious-link').forEach(link => {
             if (link.querySelector('.link-tooltip')) return;
