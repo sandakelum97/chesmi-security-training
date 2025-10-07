@@ -1,29 +1,23 @@
 // ===================================================================================
-// === FINAL & DEPLOYMENT-READY CODE FOR server.js (Includes SSL Config)
+// === FINAL & VERCEL-READY CODE FOR server.js
 // ===================================================================================
 
 require('dotenv').config();
 const express = require('express');
-const path = require('path'); // Handles file paths
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// --- SERVE STATIC FILES (for Vercel, this is handled by vercel.json, but it's safe to keep) ---
-app.use(express.static(path.join(__dirname, '../client')));
-
-// Database Pool Configuration
+// Database Pool Configuration with SSL for Vercel/Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // --- CRITICAL: SSL configuration for production database connection ---
   ssl: {
     rejectUnauthorized: false
   }
@@ -43,6 +37,7 @@ const authenticateToken = (req, res, next) => {
             req.user = result.rows[0];
             next();
         } catch (dbError) {
+            console.error("Auth DB Error:", dbError);
             res.sendStatus(500);
         }
     });
@@ -215,11 +210,5 @@ app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res
     }
 });
 
-// --- CATCH-ALL ROUTE ---
-// This serves the index.html file for any route that isn't an API call.
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/index.html'));
-});
-
-// Export the app for Vercel
+// Export the app for Vercel's serverless environment
 module.exports = app;
