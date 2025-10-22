@@ -1,15 +1,21 @@
-name: Supabase Keep Alive (chesmi-training)
+import fetch from 'node-fetch';
 
-on:
-  schedule:
-    - cron: "0 */6 * * *"   # every 6 hours
-  workflow_dispatch:
+const SUPABASE_URL = 'https://xbjatqnptzdmxsikvhsq.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY;  // your anon key stored as env var
 
-jobs:
-  ping:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ping Supabase REST API with anon key
-        run: |
-          curl -I https://xbjatqnptzdmxsikvhsq.supabase.co/rest/v1/ \
-            -H "apikey:'SUPABASE_CLIENT_API_KEY'"
+async function keepAlive() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      method: 'HEAD',
+      headers: {
+        apikey: SUPABASE_KEY
+      }
+    });
+
+    console.log('Status:', response.status);  // Should log 200
+  } catch (error) {
+    console.error('Error pinging Supabase:', error);
+  }
+}
+
+keepAlive();
