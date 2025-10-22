@@ -1,0 +1,15 @@
+name: Supabase Keep Alive (chesmi-training)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # Runs every 6 hours
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase root endpoint
+        run: |
+          echo "Pinging https://chesmi-training.supabase.co/"
+          curl -I https://chesmi-training.supabase.co/
