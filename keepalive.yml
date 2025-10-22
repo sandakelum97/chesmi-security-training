@@ -2,14 +2,14 @@ name: Supabase Keep Alive (chesmi-training)
 
 on:
   schedule:
-    - cron: "0 */6 * * *"   # Runs every 6 hours
+    - cron: "0 */6 * * *"   # every 6 hours
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase (chesmi-training)
+      - name: Ping Supabase REST API with anon key
         run: |
-          echo "Pinging Supabase keep-alive endpoint..."
-          curl -I https://xbjatqnptzdmxsikvhsq.supabase.co/
+          curl -I https://xbjatqnptzdmxsikvhsq.supabase.co/rest/v1/ \
+            -H "apikey:'SUPABASE_CLIENT_API_KEY'"
