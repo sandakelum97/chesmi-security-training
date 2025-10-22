@@ -9,7 +9,7 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase root endpoint
+      - name: Ping Supabase (chesmi-training)
         run: |
-          echo "Pinging https://chesmi-training.supabase.co/"
-          curl -I https://chesmi-training.supabase.co/
+          echo "Pinging Supabase keep-alive endpoint..."
+          curl -I https://xbjatqnptzdmxsikvhsq.supabase.co/
